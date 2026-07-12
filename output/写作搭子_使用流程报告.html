@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 写作搭子 —“宗教效应”使用记录</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a1a1a;
+    color: #d4eae8;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar timeline */
+  .sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    background: #0d2424;
+    padding: 40px 16px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar h2 {
+    font-size: 14px;
+    color: #2ac4b0;
+    margin-bottom: 20px;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+  .sidebar ul { list-style: none; position: relative; }
+  .sidebar ul::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: #1a6b63;
+  }
+  .sidebar li {
+    margin-bottom: 6px;
+    position: relative;
+    padding-left: 32px;
+  }
+  .sidebar li::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #0d4f4a;
+    border: 2px solid #1a8a7a;
+    transition: 0.2s;
+    z-index: 1;
+  }
+  .sidebar li.active::before {
+    background: #2ac4b0;
+    border-color: #2ac4b0;
+    box-shadow: 0 0 8px rgba(42,196,176,0.5);
+  }
+  .sidebar a {
+    color: #8ab8b0;
+    text-decoration: none;
+    font-size: 13px;
+    transition: 0.2s;
+    display: block;
+    padding: 4px 0;
+  }
+  .sidebar a:hover { color: #2ac4b0; }
+  .sidebar li.active a { color: #ffffff; font-weight: 600; }
+
+  /* Main content */
+  .main {
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 860px;
+  }
+  h1 {
+    font-size: 26px;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #6a9a94;
+    margin-bottom: 40px;
+  }
+
+  /* Cards */
+  .card {
+    background: #0f2626;
+    border: 1px solid #1a8a7a;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .card-header .step-badge {
+    background: #0d4f4a;
+    color: #2ac4b0;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 4px;
+  }
+  .card-header h3 {
+    font-size: 17px;
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  /* Article text area */
+  .text-box {
+    background: #0c1f1f;
+    border: 1px solid #1a6b63;
+    border-radius: 6px;
+    position: relative;
+  }
+  .text-box .word-count {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    background: #2ac4b0;
+    color: #0a1a1a;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 3px;
+    z-index: 2;
+  }
+  details.text-box { cursor: pointer; }
+  details.text-box summary {
+    padding: 36px 14px 12px;
+    font-size: 13px;
+    color: #8ab8b0;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  details.text-box summary::after {
+    content: "展开全文 ▼";
+    font-size: 12px;
+    color: #2ac4b0;
+    flex-shrink: 0;
+  }
+  details.text-box[open] summary::after {
+    content: "收起 ▲";
+  }
+  details.text-box .text-content {
+    padding: 0 14px 16px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    color: #d4eae8;
+    line-height: 1.8;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  /* AI feedback */
+  .feedback-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(42,196,176,0.1);
+  }
+  .feedback-item:last-child { border-bottom: none; }
+  .feedback-item .fb-dim { font-weight: 600; color: #2ac4b0; margin-bottom: 4px; }
+  .feedback-item .fb-body { font-size: 14px; color: #c8ddd8; line-height: 1.7; padding-left: 4px; }
+
+  /* Summary */
+  .summary-section { margin-top: 48px; }
+  .summary-section h2 {
+    font-size: 20px;
+    color: #ffffff;
+    margin-bottom: 24px;
+  }
+  .word-meter {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: #0c1f1f;
+    border: 1px solid #1a6b63;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .word-meter .wm-item { text-align: center; }
+  .word-meter .wm-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2ac4b0;
+  }
+  .word-meter .wm-label { font-size: 12px; color: #6a9a94; }
+  .word-meter .wm-arrow {
+    font-size: 24px;
+    color: #1a8a7a;
+    flex: 1;
+    text-align: center;
+  }
+  .word-meter .wm-arrow .wm-delta {
+    display: block;
+    font-size: 13px;
+    color: #8ab8b0;
+  }
+  .diff-list {
+    background: #0f2626;
+    border: 1px solid #1a8a7a;
+    border-radius: 8px;
+    padding: 24px 28px;
+  }
+  .diff-list li {
+    list-style: none;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(42,196,176,0.08);
+    font-size: 14px;
+    line-height: 1.8;
+    color: #c8ddd8;
+  }
+  .diff-list li:last-child { border-bottom: none; }
+  .diff-list li::before {
+    content: "▸";
+    color: #2ac4b0;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    body { flex-direction: column; }
+    .sidebar {
+      width: 100%; height: auto; position: static; padding: 16px;
+    }
+    .sidebar ul { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sidebar ul::before { display: none; }
+    .sidebar li { padding-left: 0; }
+    .sidebar li::before { display: none; }
+    .main { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="sidebar" id="sidebar">
+  <h2>流程</h2>
+  <ul id="timeline">
+<li><a href="#step-1" class="tl-link">初稿</a></li><li><a href="#step-2" class="tl-link">快速审稿 — AI 反馈</a></li><li><a href="#step-3" class="tl-link">第一次修改</a></li><li><a href="#step-4" class="tl-link">打磨对比 — AI 评估</a></li>
+  </ul>
+</nav>
+
+<main class="main">
+  <h1>AI 写作搭子 —“宗教效应”使用记录</h1>
+  <p class="subtitle">AI \u5199\u4f5c\u642d\u5b50 · Hermes Agent Skill · 真实使用记录</p>
+
+
+    <section id="step-1" class="card">
+    <div class="card-header">
+      <span class="step-badge">Step 1</span>
+      <h3>初稿</h3>
+    </div>
+    <details class="text-box">
+      <summary><span class="word-count">📝 608 字</span></summary>
+      <div class="text-content">宗教效应
+现在是2024.2.18号半夜两点半，我睡不着，一直再思考想着些东西，联想起之前看过的麦当劳品牌营销策略分享中那位女总监滴水不漏地，倒出营销实质的同时在态度中又偏向品牌粉丝的话语，再到娱乐明星粉丝们的狂热，以及宗教。
+我脑中不由地总结出一个很泛，但似乎又能概括这些现象的词——"宗教效应"
+实质:通过打造出一个鹤立鸡群的"物"，让人们去崇拜，去推崇，去倾向于它。并给予人们成为它粉丝的机会，同时它利用手上的资源不断通过宣发宣传，以及做出一些实质性的事来提高知名度与影响力，进而不仅加深粉丝粉它的程度，还能继续吸收扩展粉它的粉丝规模，然后通过一系列手段从粉丝们的支持中得到资源，并利用这些资源进一步提升它的影响力。不断无限循环，一步一步地按照这个法子积蓄实力，最后成长为一个大物。
+物对于粉丝的反馈分析:
+物之所以能被越粉越深，我私以为其榜样的作用并不占大头，更多是"物"所散发出的，能使粉丝们感受到优越感和归属感的氛围。诚如刀姐视频中麦当劳营销总监所道出的一个真相一般，一个人觉得这个东西好，就会分享出去，一个东西足够好和优秀，使得这件东西是优越，让人分享出去有优越感，就像你家人拿你的成就和别人吹牛一样。同时在"物"周围随着粉丝数的扩大，难免会形成圈子，从而在圈子中粉丝间深层次地，以"物"为主题的交流与互动变会给予粉丝以优越感外的东西——归属感
+————————以上截止到2024.2.18  3:11</div>
+    </details>
+    </section>
+
+    <section id="step-2" class="card">
+    <div class="card-header">
+      <span class="step-badge">Step 2</span>
+      <h3>快速审稿 — AI 反馈</h3>
+    </div>
+    <div class="feedback-area">
+      <div class="feedback-item">
+        <div class="fb-dim">🏗 结构</div>
+        <div class="fb-body">开头直接讲「实质:」，没有先告诉读者「宗教效应是什么」。读者需要自己从四个环节里拼出一个定义，门槛偏高。建议开篇锚定概念，再说机制。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">🧠 论点</div>
+        <div class="fb-body">「实质：」一段塞了造物→宣发→滚雪球→反固四个环节，挤在一起。每个环节都能单独展开一段，现在是一锅端。依琳师姐的例子提到了但没展开，读者不知道她具体体验了什么。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">🔍 细节</div>
+        <div class="fb-body">「物」的概念贯穿全文但从未被定义——它是什么？一个品牌？一个人？一个符号？读者得靠猜。缺少一个清晰的例子来锚定抽象论述。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">⚡ 节奏</div>
+        <div class="fb-body">开头情绪到位（半夜睡不着、联想起…），但进入「实质:」后节奏突然变成密集说理，没有呼吸空间。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">💬 语言</div>
+        <div class="fb-body">「再思考」应为「在思考」；「诚如」用在这里有点文白夹杂；「优越」少写了字。全文口语感强但夹杂书面词，风格不太统一。</div>
+      </div>
+    </div>
+    </section>
+
+    <section id="step-3" class="card">
+    <div class="card-header">
+      <span class="step-badge">Step 3</span>
+      <h3>第一次修改</h3>
+    </div>
+    <details class="text-box">
+      <summary><span class="word-count">📝 793 字</span></summary>
+      <div class="text-content">宗教效应
+现在是 2024.2.18 号半夜两点半，我睡不着，一直在思考想着些东西，联想起之前看过的麦当劳品牌营销策略分享中那位女总监滴水不漏地倒出营销实质、同时态度上又偏向品牌粉丝的话语，再到娱乐明星粉丝们的狂热，以及宗教。
+我脑中不由地总结出一个很泛，但似乎又能概括这些现象的词 ——"宗教效应"
+我称它为宗教效应，不是比喻 —— 是因为它和宗教共享同一个核心结构：一个被神化的 "物"、围绕物的仪式与传播、以及由此产生的 "我们 vs 他们" 的边界感。
+所谓宗教效应，本质是先打造一个 "物"。这个物必须鹤立鸡群，让人觉得 "它不一样"。然后给人们成为它粉丝的机会。
+然后利用手上的资源不断宣发，再加上做一些实质性的事来提高知名度与影响力。知名度上去了，粉丝自然就多了；越多人知道就越多人加入，越多人加入就越多人自发传播，这个过程一旦启动，就像滚雪球一样停不下来。
+但这还没完。从粉丝支持中获取的资源，又会被投回宣发里，进一步抬升影响力，吸来下一波粉丝。周而复始，不断循环，一步一步积蓄实力，最后成长为一个大物。
+物对于粉丝的反馈分析
+物之所以能被越粉越深，我私以为榜样的作用并不占大头，更多是 "物" 所散发出的那种氛围 —— 能让粉丝感受到优越感和归属感。刀姐视频里麦当劳总监有句话说得对：一个人觉得这个东西好，就会分享出去；一个东西足够好、足够优秀，让人觉得拥有它有优越感，就像你家人拿你的成就和别人吹牛一样。同时随着 "物" 周围粉丝数扩大，难免会形成圈子，圈子里粉丝之间以 "物" 为主题的深层次交流与互动，便会给予粉丝优越感之外的东西 —— 归属感。
+和宗教不同的是，粉丝们的 "神明" 是消费品 —— 它不要求你改变生活方式，只要求你持续消费。这或许是宗教效应和真正宗教最本质的区别，也是它最精妙的地方。
+———————— 以上截止到 2024.2.18 3:11</div>
+    </details>
+    </section>
+
+    <section id="step-4" class="card">
+    <div class="card-header">
+      <span class="step-badge">Step 4</span>
+      <h3>打磨对比 — AI 评估</h3>
+    </div>
+    <div class="feedback-area">
+      <div class="feedback-item">
+        <div class="fb-dim">✅ 概念锚定</div>
+        <div class="fb-body">初稿直接讲机制，读者不知道「宗教效应」是什么就要接受四个环节。修改版开篇加了一句定义——「我称它为宗教效应，不是比喻——因为它和宗教共享同一个核心结构」。读者从这开始有了共同起点。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">✅ 论证结构</div>
+        <div class="fb-body">初稿「实质：」一段塞了四个环节（造物→宣发→滚雪球→反固），挤在一起。修改版拆成三小段，每段讲一个环节：造物、宣发滚雪球、资源反固。逻辑层次从「堆在一起」变成「逐层推进」。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">✅ 语言准确度</div>
+        <div class="fb-body">「再思考」→「在思考」；「诚如...所道出的一个真相一般」→ 句式更简洁。「优越」补充完整。3 处语病全部修正。</div>
+      </div>
+      <div class="feedback-item">
+        <div class="fb-dim">✅ 结尾收束</div>
+        <div class="fb-body">初稿突然截止在「优越感」，缺少收束。修改版可以继续往下推——宗教 vs 消费品的对比性结论还没写完，建议追加一段收束。</div>
+      </div>
+    </div>
+    </section>
+
+
+  <section class="summary-section">
+    <h2>最终总结</h2>
+    <div class="word-meter">
+      <div class="wm-item">
+        <div class="wm-num">608</div>
+        <div class="wm-label">初稿</div>
+      </div>
+      <div class="wm-arrow">
+        \u2192
+        <span class="wm-delta">+185\u5b57\uff08+30.4%%\uff09</span>
+      </div>
+      <div class="wm-item">
+        <div class="wm-num">793</div>
+        <div class="wm-label">定稿（当前版本）</div>
+      </div>
+    </div>
+    <div class="diff-list">
+      <ul>
+      <li>定位变了：初稿直接开讲机制，读者还没理解「宗教效应」是什么就要接受四个环节；修改版先锚定概念——「我称它为宗教效应，不是比喻」——读者有了共同起点再往下走。</li>
+      <li>结构清了：初稿「实质：」一段塞进造物→宣发→滚雪球→反固四个环节；修改版拆成三段，每段讲透一个环节，逻辑从堆在一起变成逐层推进。</li>
+      <li>表达净了：初稿 3 处语病（再/优越/诚如）全部修正；结尾从突然截止在「归属感」变成可以继续推对比性结论，收束感更完整。</li>
+      <li>字数实了：多的 185 字不是注水——用在了概念定义和结构调整上，属于有效增量，删掉的是语病和冗余。整体更干净有力。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+const cards = document.querySelectorAll('.card');
+const links = document.querySelectorAll('.tl-link');
+const callback = function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      links.forEach(function(l, i) {
+        var el = l.parentElement;
+        if (i === Array.from(cards).indexOf(entry.target)) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+    }
+  });
+};
+var observer = new IntersectionObserver(callback, {
+  rootMargin: '-80px 0px -60% 0px',
+});
+cards.forEach(function(c) { observer.observe(c); });
+</script>
+</body>
+</html>
